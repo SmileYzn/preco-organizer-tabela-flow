@@ -91,7 +91,7 @@ export const GiftCalculator = ({ globalSettings, onCalculationSave }: GiftCalcul
       productName,
       description,
       purchasePrice,
-      freight,
+      inboundFreight: freight,
       labor,
       packaging,
       fixedCostAllocation,
@@ -99,7 +99,16 @@ export const GiftCalculator = ({ globalSettings, onCalculationSave }: GiftCalcul
       totalCost,
       suggestedMargins,
       minimumPrice,
-      competitiveAnalysis
+      competitiveAnalysis,
+      profitMargins: suggestedMargins.map((price, index) => ({
+        marginPercent: [20, 30, 40, 50, 60][index],
+        sellingPrice: price,
+        totalTaxes: price * (taxRate / 100),
+        totalCommission: price * (globalSettings.commissionRate / 100),
+        totalOutboundFreight: price * (globalSettings.freightRate / 100),
+        netProfit: price - totalCost - (price * (taxRate + globalSettings.commissionRate + globalSettings.freightRate) / 100),
+        netMarginPercent: ((price - totalCost - (price * (taxRate + globalSettings.commissionRate + globalSettings.freightRate) / 100)) / price) * 100
+      }))
     };
   };
 
@@ -181,7 +190,7 @@ export const GiftCalculator = ({ globalSettings, onCalculationSave }: GiftCalcul
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="freight">Frete/Logística (R$)</Label>
+                <Label htmlFor="freight">Frete de Entrada - Logística (R$)</Label>
                 <Input
                   id="freight"
                   type="number"

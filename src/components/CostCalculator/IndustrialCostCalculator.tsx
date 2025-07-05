@@ -67,7 +67,7 @@ export const IndustrialCostCalculator = () => {
         </TabsContent>
         
         <TabsContent value="results" className="space-y-6">
-          <CalculationResults calculations={calculations} />
+          <CalculationResults calculations={calculations} globalSettings={globalSettings} />
         </TabsContent>
       </Tabs>
     </div>

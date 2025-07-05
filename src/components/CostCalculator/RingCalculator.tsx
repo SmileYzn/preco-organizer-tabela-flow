@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, Calculator, CircleDot } from "lucide-react";
-import { GlobalSettings, MaterialCost, OutsourcingCost, LaborCost, RingCalculation } from "./types";
+import { GlobalSettings, MaterialCost, OutsourcingCost, LaborCost, RingCalculation, TubeCalculation } from "./types";
+import { TubeCalculator } from "./TubeCalculator";
 import { toast } from "@/hooks/use-toast";
 
 interface RingCalculatorProps {
@@ -27,6 +28,8 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
     { description: "Marcação a laser", hours: 0 }
   ]);
   const [packaging, setPackaging] = useState(0);
+  const [inboundFreight, setInboundFreight] = useState(0);
+  const [tubeCalculation, setTubeCalculation] = useState<TubeCalculation | null>(null);
 
   const addMaterial = () => {
     setMaterials([...materials, { description: "", quantity: 1, unitCost: 0, unit: "unidade" }]);
@@ -39,6 +42,13 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
   const updateMaterial = (index: number, field: keyof MaterialCost, value: any) => {
     const updated = [...materials];
     updated[index] = { ...updated[index], [field]: value };
+    
+    // Se for tubo de alumínio e houver cálculo de tubo, atualizar com os valores calculados
+    if (updated[index].isAluminumTube && tubeCalculation) {
+      updated[index].unitCost = tubeCalculation.costPerUnit;
+      updated[index].quantity = 1; // Uma anilha por cálculo
+    }
+    
     setMaterials(updated);
   };
 
@@ -70,6 +80,24 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
     setLabor(updated);
   };
 
+  const handleTubeCalculation = (calculation: TubeCalculation) => {
+    setTubeCalculation(calculation);
+    
+    // Atualizar materiais que são tubos de alumínio
+    const updatedMaterials = materials.map(material => {
+      if (material.isAluminumTube) {
+        return {
+          ...material,
+          unitCost: calculation.costPerUnit,
+          quantity: 1,
+          calculatedUnitsPerMeter: calculation.unitsPerMeter
+        };
+      }
+      return material;
+    });
+    setMaterials(updatedMaterials);
+  };
+
   const calculateCosts = (): RingCalculation => {
     // Custos diretos
     const materialCosts = materials.reduce((sum, m) => sum + (m.quantity * m.unitCost), 0);
@@ -78,7 +106,7 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
     const laborCosts = totalLaborHours * globalSettings.laborRate;
     const laserDepreciation = totalLaborHours * globalSettings.laserDepreciationRate;
     
-    const totalDirectCost = materialCosts + outsourcingCosts + laborCosts + packaging;
+    const totalDirectCost = materialCosts + outsourcingCosts + laborCosts + packaging + inboundFreight;
     
     // Custos indiretos
     const fixedCostAllocation = globalSettings.monthlyFixedCosts / globalSettings.monthlyProduction;
@@ -106,6 +134,7 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
       outsourcing,
       labor,
       packaging,
+      inboundFreight,
       fixedCostAllocation,
       laserDepreciation,
       totalDirectCost,
@@ -113,7 +142,16 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
       totalCost,
       suggestedMargins,
       minimumPrice,
-      breakEvenQuantity: Math.ceil(globalSettings.monthlyFixedCosts / (minimumPrice - totalDirectCost))
+      breakEvenQuantity: Math.ceil(globalSettings.monthlyFixedCosts / (minimumPrice - totalDirectCost)),
+      profitMargins: suggestedMargins.map((price, index) => ({
+        marginPercent: [20, 30, 40, 50, 60][index],
+        sellingPrice: price,
+        totalTaxes: price * (taxRate / 100),
+        totalCommission: price * (globalSettings.commissionRate / 100),
+        totalOutboundFreight: price * (globalSettings.freightRate / 100),
+        netProfit: price - totalCost - (price * (taxRate + globalSettings.commissionRate + globalSettings.freightRate) / 100),
+        netMarginPercent: ((price - totalCost - (price * (taxRate + globalSettings.commissionRate + globalSettings.freightRate) / 100)) / price) * 100
+      }))
     };
   };
 
@@ -179,6 +217,18 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
             </div>
           </div>
 
+          {/* Calculadora de Tubo (se aplicável) */}
+          {materials.some(m => m.isAluminumTube) && (
+            <TubeCalculator 
+              onCalculationChange={handleTubeCalculation}
+              initialValues={tubeCalculation ? {
+                tubePrice: tubeCalculation.tubePrice,
+                ringHeight: tubeCalculation.ringHeight,
+                cuttingLoss: tubeCalculation.cuttingLoss
+              } : undefined}
+            />
+          )}
+
           {/* Matérias-primas */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -190,7 +240,7 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
             </div>
             
             {materials.map((material, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
+              <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
                 <div className="space-y-2">
                   <Label>Descrição</Label>
                   <Input
@@ -200,31 +250,77 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Quantidade</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={material.quantity}
-                    onChange={(e) => updateMaterial(index, 'quantity', parseFloat(e.target.value) || 0)}
-                  />
+                  <Label>Tipo</Label>
+                  <select
+                    className="w-full p-2 border rounded"
+                    value={material.isAluminumTube ? 'tube' : 'other'}
+                    onChange={(e) => updateMaterial(index, 'isAluminumTube', e.target.value === 'tube')}
+                  >
+                    <option value="other">Material comum</option>
+                    <option value="tube">Tubo de alumínio</option>
+                  </select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Custo Unitário (R$)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={material.unitCost}
-                    onChange={(e) => updateMaterial(index, 'unitCost', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Unidade</Label>
-                  <Input
-                    value={material.unit}
-                    onChange={(e) => updateMaterial(index, 'unit', e.target.value)}
-                    placeholder="ex: metro, kg, unidade"
-                  />
-                </div>
+                {!material.isAluminumTube && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Quantidade</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={material.quantity}
+                        onChange={(e) => updateMaterial(index, 'quantity', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Custo Unitário (R$)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={material.unitCost}
+                        onChange={(e) => updateMaterial(index, 'unitCost', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Unidade</Label>
+                      <Input
+                        value={material.unit}
+                        onChange={(e) => updateMaterial(index, 'unit', e.target.value)}
+                        placeholder="ex: metro, kg, unidade"
+                      />
+                    </div>
+                  </>
+                )}
+                {material.isAluminumTube && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Qtd. (calculada)</Label>
+                      <Input
+                        type="number"
+                        value={1}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Custo (calculado)</Label>
+                      <Input
+                        type="number"
+                        value={material.unitCost}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Rendimento (un/m)</Label>
+                      <Input
+                        type="number"
+                        value={material.calculatedUnitsPerMeter || 0}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="flex items-end">
                   <Button
                     onClick={() => removeMaterial(index)}
@@ -343,10 +439,10 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
             ))}
           </div>
 
-          {/* Embalagem */}
+          {/* Embalagem e Frete */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-foreground">Embalagem</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <h3 className="text-lg font-semibold text-foreground">Embalagem e Logística</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="packaging">Custo de Embalagem (R$)</Label>
                 <Input
@@ -356,6 +452,17 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
                   value={packaging}
                   onChange={(e) => setPackaging(parseFloat(e.target.value) || 0)}
                   placeholder="ex: 1.50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="inboundFreight">Frete de Entrada - Matéria Prima (R$)</Label>
+                <Input
+                  id="inboundFreight"
+                  type="number"
+                  step="0.01"
+                  value={inboundFreight}
+                  onChange={(e) => setInboundFreight(parseFloat(e.target.value) || 0)}
+                  placeholder="ex: 2.00"
                 />
               </div>
             </div>

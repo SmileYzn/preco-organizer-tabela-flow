@@ -16,6 +16,12 @@ export interface MaterialCost {
   quantity: number;
   unitCost: number;
   unit: string;
+  // Para cálculo de rendimento de tubos
+  isAluminumTube?: boolean;
+  tubePrice?: number; // R$/metro
+  ringHeight?: number; // mm
+  cuttingLoss?: number; // %
+  calculatedUnitsPerMeter?: number;
 }
 
 export interface OutsourcingCost {
@@ -40,6 +46,7 @@ export interface RingCalculation {
   outsourcing: OutsourcingCost[]; // Corte, anodização
   labor: LaborCost[];
   packaging: number;
+  inboundFreight: number; // Frete de entrada
   
   // Custos indiretos
   fixedCostAllocation: number; // Calculado automaticamente
@@ -52,6 +59,9 @@ export interface RingCalculation {
   suggestedMargins: number[]; // [20%, 30%, 40%, 50%]
   minimumPrice: number;
   breakEvenQuantity: number;
+  
+  // Análise de precificação
+  profitMargins: ProfitMargin[];
 }
 
 export interface GiftCalculation {
@@ -61,7 +71,7 @@ export interface GiftCalculation {
   
   // Custos
   purchasePrice: number; // Preço de compra em SP
-  freight: number; // Frete de SP
+  inboundFreight: number; // Frete de entrada (entrada)
   labor: LaborCost[]; // Apenas gravação
   packaging: number;
   
@@ -78,6 +88,19 @@ export interface GiftCalculation {
     ourMargin: number;
     recommendation: string;
   };
+  
+  // Análise de precificação
+  profitMargins: ProfitMargin[];
+}
+
+export interface ProfitMargin {
+  marginPercent: number;
+  sellingPrice: number;
+  totalTaxes: number;
+  totalCommission: number;
+  totalOutboundFreight: number;
+  netProfit: number;
+  netMarginPercent: number;
 }
 
 export interface ProfitabilityAnalysis {
@@ -90,4 +113,12 @@ export interface ProfitabilityAnalysis {
     volume: { change: number; impact: number }[];
     cost: { change: number; impact: number }[];
   };
+}
+
+export interface TubeCalculation {
+  tubePrice: number; // R$/metro
+  ringHeight: number; // mm
+  cuttingLoss: number; // %
+  unitsPerMeter: number;
+  costPerUnit: number;
 }

@@ -2,13 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { TrendingUp, DollarSign, AlertTriangle, Target } from "lucide-react";
-import { RingCalculation, GiftCalculation } from "./types";
+import { RingCalculation, GiftCalculation, GlobalSettings } from "./types";
+import { PricingTable } from "./PricingTable";
 
 interface CalculationResultsProps {
   calculations: (RingCalculation | GiftCalculation)[];
+  globalSettings: GlobalSettings;
 }
 
-export const CalculationResults = ({ calculations }: CalculationResultsProps) => {
+export const CalculationResults = ({ calculations, globalSettings }: CalculationResultsProps) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -116,9 +118,9 @@ export const CalculationResults = ({ calculations }: CalculationResultsProps) =>
                       </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Frete:</span>
+                      <span className="text-muted-foreground">Frete de Entrada:</span>
                       <span className="float-right font-medium">
-                        {formatCurrency(calc.freight)}
+                        {formatCurrency(calc.inboundFreight)}
                       </span>
                     </div>
                     <div>
@@ -237,6 +239,14 @@ export const CalculationResults = ({ calculations }: CalculationResultsProps) =>
                 </div>
               </div>
             )}
+
+            {/* Análise de Precificação */}
+            <PricingTable 
+              totalCost={calc.totalCost}
+              globalSettings={globalSettings}
+              productName={calc.productName}
+              productType={'materials' in calc ? 'ring' : 'gift'}
+            />
 
             {/* Point Break-even para Anilhas */}
             {'breakEvenQuantity' in calc && (

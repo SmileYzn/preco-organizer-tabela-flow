@@ -171,7 +171,7 @@ export const GlobalSettingsComponent = ({ settings, onSettingsChange }: GlobalSe
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="freight">Frete (%)</Label>
+              <Label htmlFor="freight">Frete de Entrega - Saída (%)</Label>
               <Input
                 id="freight"
                 type="number"
