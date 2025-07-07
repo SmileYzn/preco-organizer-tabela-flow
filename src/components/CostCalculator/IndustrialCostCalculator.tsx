@@ -4,6 +4,7 @@ import { GlobalSettingsComponent } from "./GlobalSettings";
 import { RingCalculator } from "./RingCalculator";
 import { GiftCalculator } from "./GiftCalculator";
 import { CalculationResults } from "./CalculationResults";
+import { ProductManager } from "./ProductManager";
 import { GlobalSettings, RingCalculation, GiftCalculation } from "./types";
 
 const defaultSettings: GlobalSettings = {
@@ -38,10 +39,11 @@ export const IndustrialCostCalculator = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="settings">Configurações</TabsTrigger>
           <TabsTrigger value="rings">Anilhas</TabsTrigger>
           <TabsTrigger value="gifts">Brindes</TabsTrigger>
+          <TabsTrigger value="products">Produtos</TabsTrigger>
           <TabsTrigger value="results">Resultados</TabsTrigger>
         </TabsList>
         
@@ -64,6 +66,10 @@ export const IndustrialCostCalculator = () => {
             globalSettings={globalSettings}
             onCalculationSave={handleGiftCalculation}
           />
+        </TabsContent>
+        
+        <TabsContent value="products" className="space-y-6">
+          <ProductManager globalSettings={globalSettings} />
         </TabsContent>
         
         <TabsContent value="results" className="space-y-6">

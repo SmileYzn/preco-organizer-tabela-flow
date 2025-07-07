@@ -167,10 +167,25 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
 
     const calculation = calculateCosts();
     onCalculationSave(calculation);
+
+    // Salvar no localStorage
+    const savedProduct = {
+      id: calculation.id,
+      type: 'ring' as const,
+      productName,
+      description,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      calculation
+    };
+
+    const existingProducts = JSON.parse(localStorage.getItem('savedProducts') || '[]');
+    const updatedProducts = [...existingProducts, savedProduct];
+    localStorage.setItem('savedProducts', JSON.stringify(updatedProducts));
     
     toast({
-      title: "Cálculo realizado",
-      description: "Custos calculados com sucesso!",
+      title: "Produto salvo",
+      description: "Anilha calculada e salva com sucesso!",
     });
   };
 

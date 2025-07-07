@@ -115,6 +115,16 @@ export interface ProfitabilityAnalysis {
   };
 }
 
+export interface SavedProduct {
+  id: string;
+  type: 'ring' | 'gift';
+  productName: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  calculation: RingCalculation | GiftCalculation;
+}
+
 export interface TubeCalculation {
   tubePrice: number; // R$/metro
   ringHeight: number; // mm
