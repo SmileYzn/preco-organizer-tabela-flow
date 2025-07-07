@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, Calculator, CircleDot } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { GlobalSettings, MaterialCost, OutsourcingCost, LaborCost, RingCalculation, TubeCalculation } from "./types";
 import { TubeCalculator } from "./TubeCalculator";
 import { toast } from "@/hooks/use-toast";
@@ -25,11 +26,13 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
     { description: "Anodização", cost: 0, supplier: "" }
   ]);
   const [labor, setLabor] = useState<LaborCost[]>([
-    { description: "Marcação a laser", hours: 0 }
+    { description: "Marcação a laser", minutes: 0 }
   ]);
   const [packaging, setPackaging] = useState(0);
   const [inboundFreight, setInboundFreight] = useState(0);
   const [tubeCalculation, setTubeCalculation] = useState<TubeCalculation | null>(null);
+  const [marketPrice, setMarketPrice] = useState<number>(0);
+  const [hasCompetitiveAnalysis, setHasCompetitiveAnalysis] = useState<boolean>(false);
 
   const addMaterial = () => {
     setMaterials([...materials, { description: "", quantity: 1, unitCost: 0, unit: "unidade" }]);
@@ -67,7 +70,7 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
   };
 
   const addLabor = () => {
-    setLabor([...labor, { description: "", hours: 0 }]);
+    setLabor([...labor, { description: "", minutes: 0 }]);
   };
 
   const removeLabor = (index: number) => {
@@ -102,7 +105,8 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
     // Custos diretos
     const materialCosts = materials.reduce((sum, m) => sum + (m.quantity * m.unitCost), 0);
     const outsourcingCosts = outsourcing.reduce((sum, o) => sum + o.cost, 0);
-    const totalLaborHours = labor.reduce((sum, l) => sum + l.hours, 0);
+    const totalLaborMinutes = labor.reduce((sum, l) => sum + l.minutes, 0);
+    const totalLaborHours = totalLaborMinutes / 60;
     const laborCosts = totalLaborHours * globalSettings.laborRate;
     const laserDepreciation = totalLaborHours * globalSettings.laserDepreciationRate;
     
@@ -126,6 +130,15 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
       totalCost * (1 + margin / 100) / (1 - totalTaxAndCommission / 100)
     );
 
+    // Análise competitiva
+    const competitiveAnalysis = hasCompetitiveAnalysis && marketPrice > 0 ? {
+      marketPrice,
+      ourMargin: ((marketPrice - totalCost) / marketPrice) * 100,
+      recommendation: marketPrice > minimumPrice ? 
+        `Preço competitivo. Margem de ${((marketPrice - totalCost) / marketPrice * 100).toFixed(1)}%.` :
+        'Preço de mercado abaixo do nosso custo mínimo. Revisar estratégia.'
+    } : undefined;
+
     return {
       id: Date.now().toString(),
       productName,
@@ -143,6 +156,7 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
       suggestedMargins,
       minimumPrice,
       breakEvenQuantity: Math.ceil(globalSettings.monthlyFixedCosts / (minimumPrice - totalDirectCost)),
+      competitiveAnalysis,
       profitMargins: suggestedMargins.map((price, index) => ({
         marginPercent: [20, 30, 40, 50, 60][index],
         sellingPrice: price,
@@ -422,14 +436,14 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Horas</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={laborItem.hours}
-                    onChange={(e) => updateLabor(index, 'hours', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
+                   <Label>Minutos</Label>
+                   <Input
+                     type="number"
+                     step="1"
+                     value={laborItem.minutes}
+                     onChange={(e) => updateLabor(index, 'minutes', parseFloat(e.target.value) || 0)}
+                   />
+                 </div>
                 <div className="space-y-2">
                   <Label>Taxa (R$/h)</Label>
                   <Input
@@ -481,6 +495,34 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
                 />
               </div>
             </div>
+          </div>
+
+          {/* Análise Competitiva */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="competitive-analysis"
+                checked={hasCompetitiveAnalysis}
+                onCheckedChange={(checked) => setHasCompetitiveAnalysis(checked === true)}
+              />
+              <Label htmlFor="competitive-analysis" className="text-sm font-medium">
+                Incluir análise competitiva
+              </Label>
+            </div>
+            
+            {hasCompetitiveAnalysis && (
+              <div className="space-y-2">
+                <Label htmlFor="market-price">Preço de Mercado dos Concorrentes (R$)</Label>
+                <Input
+                  id="market-price"
+                  type="number"
+                  step="0.01"
+                  value={marketPrice}
+                  onChange={(e) => setMarketPrice(parseFloat(e.target.value) || 0)}
+                  placeholder="ex: 25.00"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end pt-4">

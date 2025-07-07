@@ -32,7 +32,7 @@ export interface OutsourcingCost {
 
 export interface LaborCost {
   description: string;
-  hours: number;
+  minutes: number;
   rate?: number; // Se diferente da taxa global
 }
 
@@ -62,6 +62,13 @@ export interface RingCalculation {
   
   // Análise de precificação
   profitMargins: ProfitMargin[];
+  
+  // Análise competitiva
+  competitiveAnalysis?: {
+    marketPrice: number;
+    ourMargin: number;
+    recommendation: string;
+  };
 }
 
 export interface GiftCalculation {

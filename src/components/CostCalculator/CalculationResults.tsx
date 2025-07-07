@@ -81,7 +81,7 @@ export const CalculationResults = ({ calculations, globalSettings }: Calculation
                     <div>
                       <span className="text-muted-foreground">Mão de obra:</span>
                       <span className="float-right font-medium">
-                        {formatCurrency(calc.labor.reduce((sum, l) => sum + l.hours, 0) * 25)} {/* assumindo taxa padrão */}
+                        {formatCurrency(calc.labor.reduce((sum, l) => sum + (l.minutes / 60), 0) * 25)} {/* convertendo minutos para horas */}
                       </span>
                     </div>
                     <div>
@@ -126,7 +126,7 @@ export const CalculationResults = ({ calculations, globalSettings }: Calculation
                     <div>
                       <span className="text-muted-foreground">Personalização:</span>
                       <span className="float-right font-medium">
-                        {formatCurrency(calc.labor.reduce((sum, l) => sum + l.hours, 0) * 25)}
+                        {formatCurrency(calc.labor.reduce((sum, l) => sum + (l.minutes / 60), 0) * 25)}
                       </span>
                     </div>
                     <div>
@@ -206,8 +206,8 @@ export const CalculationResults = ({ calculations, globalSettings }: Calculation
               </div>
             </div>
 
-            {/* Análise Competitiva para Brindes */}
-            {'competitiveAnalysis' in calc && calc.competitiveAnalysis && (
+            {/* Análise Competitiva */}
+            {calc.competitiveAnalysis && (
               <div className="space-y-4">
                 <h4 className="font-semibold text-foreground flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />

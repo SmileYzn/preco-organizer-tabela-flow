@@ -19,13 +19,13 @@ export const GiftCalculator = ({ globalSettings, onCalculationSave }: GiftCalcul
   const [purchasePrice, setPurchasePrice] = useState(0);
   const [freight, setFreight] = useState(0);
   const [labor, setLabor] = useState<LaborCost[]>([
-    { description: "Gravação a laser", hours: 0 }
+    { description: "Gravação a laser", minutes: 0 }
   ]);
   const [packaging, setPackaging] = useState(0);
   const [marketPrice, setMarketPrice] = useState(0);
 
   const addLabor = () => {
-    setLabor([...labor, { description: "", hours: 0 }]);
+    setLabor([...labor, { description: "", minutes: 0 }]);
   };
 
   const removeLabor = (index: number) => {
@@ -40,7 +40,8 @@ export const GiftCalculator = ({ globalSettings, onCalculationSave }: GiftCalcul
 
   const calculateCosts = (): GiftCalculation => {
     // Custos diretos
-    const totalLaborHours = labor.reduce((sum, l) => sum + l.hours, 0);
+    const totalLaborMinutes = labor.reduce((sum, l) => sum + l.minutes, 0);
+    const totalLaborHours = totalLaborMinutes / 60;
     const laborCosts = totalLaborHours * globalSettings.laborRate;
     const laserDepreciation = totalLaborHours * globalSettings.laserDepreciationRate;
     
@@ -239,14 +240,14 @@ export const GiftCalculator = ({ globalSettings, onCalculationSave }: GiftCalcul
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Horas</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={laborItem.hours}
-                    onChange={(e) => updateLabor(index, 'hours', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
+                   <Label>Minutos</Label>
+                   <Input
+                     type="number"
+                     step="1"
+                     value={laborItem.minutes}
+                     onChange={(e) => updateLabor(index, 'minutes', parseFloat(e.target.value) || 0)}
+                   />
+                 </div>
                 <div className="space-y-2">
                   <Label>Taxa (R$/h)</Label>
                   <Input
