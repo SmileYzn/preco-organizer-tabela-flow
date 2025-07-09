@@ -71,6 +71,25 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
     });
   };
 
+  const handleEditCalculationField = (arrayName: string, index: number, field: string, value: any) => {
+    if (!editingProduct) return;
+    
+    const calculation = editingProduct.calculation as any;
+    const updatedArray = [...(calculation[arrayName] || [])];
+    updatedArray[index] = {
+      ...updatedArray[index],
+      [field]: value
+    };
+    
+    setEditingProduct({
+      ...editingProduct,
+      calculation: {
+        ...calculation,
+        [arrayName]: updatedArray
+      }
+    });
+  };
+
   const filteredProducts = savedProducts.filter(product =>
     product.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -315,12 +334,13 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
                                 <Edit2 className="h-4 w-4" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                            <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>Editar Produto: {editingProduct?.productName}</DialogTitle>
                               </DialogHeader>
                               {editingProduct && (
-                                <div className="space-y-4">
+                                <div className="space-y-6">
+                                  {/* Informações Básicas */}
                                   <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                       <Label htmlFor="edit-name">Nome do Produto</Label>
@@ -345,20 +365,192 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
                                       onChange={(e) => handleEditField('description', e.target.value)}
                                     />
                                   </div>
-                                  <div className="grid grid-cols-2 gap-4">
+
+                                  {/* Dados de Cálculo Editáveis */}
+                                  {editingProduct.type === 'ring' && (
+                                    <div className="space-y-4">
+                                      <h3 className="text-lg font-semibold">Dados de Cálculo - Anilha</h3>
+                                      
+                                      {/* Materiais */}
+                                      <div className="space-y-2">
+                                        <Label>Materiais</Label>
+                                        {(editingProduct.calculation as any).materials?.map((material: any, index: number) => (
+                                          <div key={index} className="grid grid-cols-4 gap-2 p-2 border rounded">
+                                            <Input
+                                              placeholder="Descrição"
+                                              value={material.description}
+                                              onChange={(e) => handleEditCalculationField('materials', index, 'description', e.target.value)}
+                                            />
+                                            <Input
+                                              type="number"
+                                              placeholder="Quantidade"
+                                              value={material.quantity}
+                                              onChange={(e) => handleEditCalculationField('materials', index, 'quantity', parseFloat(e.target.value) || 0)}
+                                            />
+                                            <Input
+                                              type="number"
+                                              placeholder="Custo unitário"
+                                              value={material.unitCost}
+                                              onChange={(e) => handleEditCalculationField('materials', index, 'unitCost', parseFloat(e.target.value) || 0)}
+                                            />
+                                            <Input
+                                              placeholder="Unidade"
+                                              value={material.unit}
+                                              onChange={(e) => handleEditCalculationField('materials', index, 'unit', e.target.value)}
+                                            />
+                                          </div>
+                                        ))}
+                                      </div>
+
+                                      {/* Terceirização */}
+                                      <div className="space-y-2">
+                                        <Label>Terceirização</Label>
+                                        {(editingProduct.calculation as any).outsourcing?.map((outsource: any, index: number) => (
+                                          <div key={index} className="grid grid-cols-2 gap-2 p-2 border rounded">
+                                            <Input
+                                              placeholder="Descrição"
+                                              value={outsource.description}
+                                              onChange={(e) => handleEditCalculationField('outsourcing', index, 'description', e.target.value)}
+                                            />
+                                            <Input
+                                              type="number"
+                                              placeholder="Custo"
+                                              value={outsource.cost}
+                                              onChange={(e) => handleEditCalculationField('outsourcing', index, 'cost', parseFloat(e.target.value) || 0)}
+                                            />
+                                          </div>
+                                        ))}
+                                      </div>
+
+                                      {/* Mão de Obra */}
+                                      <div className="space-y-2">
+                                        <Label>Mão de Obra</Label>
+                                        {(editingProduct.calculation as any).labor?.map((labor: any, index: number) => (
+                                          <div key={index} className="grid grid-cols-2 gap-2 p-2 border rounded">
+                                            <Input
+                                              placeholder="Descrição"
+                                              value={labor.description}
+                                              onChange={(e) => handleEditCalculationField('labor', index, 'description', e.target.value)}
+                                            />
+                                            <Input
+                                              type="number"
+                                              placeholder="Minutos"
+                                              value={labor.minutes}
+                                              onChange={(e) => handleEditCalculationField('labor', index, 'minutes', parseFloat(e.target.value) || 0)}
+                                            />
+                                          </div>
+                                        ))}
+                                      </div>
+
+                                      {/* Outros custos */}
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label>Embalagem (R$)</Label>
+                                          <Input
+                                            type="number"
+                                            value={(editingProduct.calculation as any).packaging || 0}
+                                            onChange={(e) => handleEditField('calculation', {
+                                              ...editingProduct.calculation,
+                                              packaging: parseFloat(e.target.value) || 0
+                                            })}
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label>Frete de Entrada (R$)</Label>
+                                          <Input
+                                            type="number"
+                                            value={(editingProduct.calculation as any).inboundFreight || 0}
+                                            onChange={(e) => handleEditField('calculation', {
+                                              ...editingProduct.calculation,
+                                              inboundFreight: parseFloat(e.target.value) || 0
+                                            })}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {editingProduct.type === 'gift' && (
+                                    <div className="space-y-4">
+                                      <h3 className="text-lg font-semibold">Dados de Cálculo - Brinde</h3>
+                                      
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label>Preço de Compra (R$)</Label>
+                                          <Input
+                                            type="number"
+                                            value={(editingProduct.calculation as any).purchasePrice || 0}
+                                            onChange={(e) => handleEditField('calculation', {
+                                              ...editingProduct.calculation,
+                                              purchasePrice: parseFloat(e.target.value) || 0
+                                            })}
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label>Frete de Entrada (R$)</Label>
+                                          <Input
+                                            type="number"
+                                            value={(editingProduct.calculation as any).inboundFreight || 0}
+                                            onChange={(e) => handleEditField('calculation', {
+                                              ...editingProduct.calculation,
+                                              inboundFreight: parseFloat(e.target.value) || 0
+                                            })}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label>Embalagem (R$)</Label>
+                                          <Input
+                                            type="number"
+                                            value={(editingProduct.calculation as any).packaging || 0}
+                                            onChange={(e) => handleEditField('calculation', {
+                                              ...editingProduct.calculation,
+                                              packaging: parseFloat(e.target.value) || 0
+                                            })}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* Mão de Obra para Brindes */}
+                                      <div className="space-y-2">
+                                        <Label>Mão de Obra</Label>
+                                        {(editingProduct.calculation as any).labor?.map((labor: any, index: number) => (
+                                          <div key={index} className="grid grid-cols-2 gap-2 p-2 border rounded">
+                                            <Input
+                                              placeholder="Descrição"
+                                              value={labor.description}
+                                              onChange={(e) => handleEditCalculationField('labor', index, 'description', e.target.value)}
+                                            />
+                                            <Input
+                                              type="number"
+                                              placeholder="Minutos"
+                                              value={labor.minutes}
+                                              onChange={(e) => handleEditCalculationField('labor', index, 'minutes', parseFloat(e.target.value) || 0)}
+                                            />
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Custos Calculados (apenas visualização) */}
+                                  <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                                     <div>
-                                      <Label>Custo Total</Label>
+                                      <Label>Custo Total (Calculado)</Label>
                                       <p className="text-lg font-semibold bg-muted p-2 rounded">
                                         {formatCurrency(editingProduct.calculation.totalCost)}
                                       </p>
                                     </div>
                                     <div>
-                                      <Label>Preço Mínimo</Label>
+                                      <Label>Preço Mínimo (Calculado)</Label>
                                       <p className="text-lg font-semibold bg-muted p-2 rounded">
                                         {formatCurrency(editingProduct.calculation.minimumPrice)}
                                       </p>
                                     </div>
                                   </div>
+
                                   <div className="grid grid-cols-2 gap-4">
                                     <div>
                                       <Label>Criado em</Label>
@@ -369,6 +561,7 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
                                       <p className="text-sm text-muted-foreground">{formatDate(editingProduct.updatedAt)}</p>
                                     </div>
                                   </div>
+
                                   <div className="flex justify-end gap-2 pt-4">
                                     <Button 
                                       variant="outline" 
