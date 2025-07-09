@@ -19,6 +19,7 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
   const [savedProducts, setSavedProducts] = useState<SavedProduct[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingProduct, setEditingProduct] = useState<SavedProduct | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     loadSavedProducts();
@@ -39,6 +40,34 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
     toast({
       title: "Produto excluído",
       description: "Produto removido com sucesso!",
+    });
+  };
+
+  const saveEditedProduct = () => {
+    if (!editingProduct) return;
+    
+    const updated = savedProducts.map(p => 
+      p.id === editingProduct.id 
+        ? { ...editingProduct, updatedAt: new Date().toISOString() }
+        : p
+    );
+    
+    setSavedProducts(updated);
+    localStorage.setItem('savedProducts', JSON.stringify(updated));
+    setIsEditDialogOpen(false);
+    setEditingProduct(null);
+    
+    toast({
+      title: "Produto atualizado",
+      description: "Produto editado com sucesso!",
+    });
+  };
+
+  const handleEditField = (field: string, value: any) => {
+    if (!editingProduct) return;
+    setEditingProduct({
+      ...editingProduct,
+      [field]: value
     });
   };
 
@@ -273,56 +302,89 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
                       <TableCell>{formatDate(product.createdAt)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Dialog>
+                          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                             <DialogTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => setEditingProduct(product)}
+                                onClick={() => {
+                                  setEditingProduct(product);
+                                  setIsEditDialogOpen(true);
+                                }}
                               >
                                 <Edit2 className="h-4 w-4" />
                               </Button>
                             </DialogTrigger>
                             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                               <DialogHeader>
-                                <DialogTitle>Detalhes do Produto: {product.productName}</DialogTitle>
+                                <DialogTitle>Editar Produto: {editingProduct?.productName}</DialogTitle>
                               </DialogHeader>
-                              <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label>Nome</Label>
-                                    <p className="text-sm">{product.productName}</p>
+                              {editingProduct && (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="edit-name">Nome do Produto</Label>
+                                      <Input
+                                        id="edit-name"
+                                        value={editingProduct.productName}
+                                        onChange={(e) => handleEditField('productName', e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Tipo</Label>
+                                      <p className="text-sm bg-muted p-2 rounded">
+                                        {editingProduct.type === 'ring' ? 'Anilha' : 'Brinde'}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <Label>Tipo</Label>
-                                    <p className="text-sm">{product.type === 'ring' ? 'Anilha' : 'Brinde'}</p>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="edit-description">Descrição</Label>
+                                    <Input
+                                      id="edit-description"
+                                      value={editingProduct.description}
+                                      onChange={(e) => handleEditField('description', e.target.value)}
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label>Custo Total</Label>
+                                      <p className="text-lg font-semibold bg-muted p-2 rounded">
+                                        {formatCurrency(editingProduct.calculation.totalCost)}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <Label>Preço Mínimo</Label>
+                                      <p className="text-lg font-semibold bg-muted p-2 rounded">
+                                        {formatCurrency(editingProduct.calculation.minimumPrice)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label>Criado em</Label>
+                                      <p className="text-sm text-muted-foreground">{formatDate(editingProduct.createdAt)}</p>
+                                    </div>
+                                    <div>
+                                      <Label>Última atualização</Label>
+                                      <p className="text-sm text-muted-foreground">{formatDate(editingProduct.updatedAt)}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-end gap-2 pt-4">
+                                    <Button 
+                                      variant="outline" 
+                                      onClick={() => {
+                                        setIsEditDialogOpen(false);
+                                        setEditingProduct(null);
+                                      }}
+                                    >
+                                      Cancelar
+                                    </Button>
+                                    <Button onClick={saveEditedProduct}>
+                                      Salvar Alterações
+                                    </Button>
                                   </div>
                                 </div>
-                                <div>
-                                  <Label>Descrição</Label>
-                                  <p className="text-sm">{product.description}</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label>Custo Total</Label>
-                                    <p className="text-lg font-semibold">{formatCurrency(product.calculation.totalCost)}</p>
-                                  </div>
-                                  <div>
-                                    <Label>Preço Mínimo</Label>
-                                    <p className="text-lg font-semibold">{formatCurrency(product.calculation.minimumPrice)}</p>
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <Label>Criado em</Label>
-                                    <p className="text-sm">{formatDate(product.createdAt)}</p>
-                                  </div>
-                                  <div>
-                                    <Label>Atualizado em</Label>
-                                    <p className="text-sm">{formatDate(product.updatedAt)}</p>
-                                  </div>
-                                </div>
-                              </div>
+                              )}
                             </DialogContent>
                           </Dialog>
                           <Button

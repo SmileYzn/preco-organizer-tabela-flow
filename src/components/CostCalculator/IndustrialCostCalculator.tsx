@@ -27,7 +27,10 @@ const defaultSettings: GlobalSettings = {
 };
 
 export const IndustrialCostCalculator = () => {
-  const [globalSettings, setGlobalSettings] = useState<GlobalSettings>(defaultSettings);
+  const [globalSettings, setGlobalSettings] = useState<GlobalSettings>(() => {
+    const saved = localStorage.getItem('globalSettings');
+    return saved ? JSON.parse(saved) : defaultSettings;
+  });
   const [calculations, setCalculations] = useState<(RingCalculation | GiftCalculation)[]>([]);
 
   const handleRingCalculation = (calculation: RingCalculation) => {
@@ -40,6 +43,7 @@ export const IndustrialCostCalculator = () => {
 
   const handleSettingsChange = (settings: GlobalSettings) => {
     setGlobalSettings(settings);
+    localStorage.setItem('globalSettings', JSON.stringify(settings));
   };
 
   return (
