@@ -8,6 +8,7 @@ import { Plus, Trash2, Calculator, CircleDot } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { GlobalSettings, MaterialCost, OutsourcingCost, LaborCost, RingCalculation, TubeCalculation } from "./types";
 import { TubeCalculator } from "./TubeCalculator";
+import { RingHistoryInput } from "./RingHistoryInput";
 import { toast } from "@/hooks/use-toast";
 
 interface RingCalculatorProps {
@@ -197,6 +198,7 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
     const existingProducts = JSON.parse(localStorage.getItem('savedProducts') || '[]');
     const updatedProducts = [...existingProducts, savedProduct];
     localStorage.setItem('savedProducts', JSON.stringify(updatedProducts));
+    window.dispatchEvent(new Event('productsUpdated'));
     
     toast({
       title: "Produto salvo",
@@ -225,25 +227,20 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-foreground">Informações do Produto</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="productName">Nome do Produto</Label>
-                <Input
-                  id="productName"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  placeholder="ex: Anilha Canário 2.5mm"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Detalhes do produto, medidas, cor, etc."
-                  rows={2}
-                />
-              </div>
+              <RingHistoryInput
+                label="Nome do Produto"
+                value={productName}
+                onChange={setProductName}
+                placeholder="ex: Anilha Canário 2.5mm"
+                storageKey="ring-product-names"
+              />
+              <RingHistoryInput
+                label="Descrição"
+                value={description}
+                onChange={setDescription}
+                placeholder="Detalhes do produto, medidas, cor, etc."
+                storageKey="ring-descriptions"
+              />
             </div>
           </div>
 
@@ -271,14 +268,13 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
             
             {materials.map((material, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
-                <div className="space-y-2">
-                  <Label>Descrição</Label>
-                  <Input
-                    value={material.description}
-                    onChange={(e) => updateMaterial(index, 'description', e.target.value)}
-                    placeholder="ex: Tubo de alumínio"
-                  />
-                </div>
+                <RingHistoryInput
+                  label="Descrição"
+                  value={material.description}
+                  onChange={(value) => updateMaterial(index, 'description', value)}
+                  placeholder="ex: Tubo de alumínio"
+                  storageKey="ring-materials"
+                />
                 <div className="space-y-2">
                   <Label>Tipo</Label>
                   <select
@@ -377,14 +373,13 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
             
             {outsourcing.map((service, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
-                <div className="space-y-2">
-                  <Label>Descrição do Serviço</Label>
-                  <Input
-                    value={service.description}
-                    onChange={(e) => updateOutsourcing(index, 'description', e.target.value)}
-                    placeholder="ex: Corte do tubo"
-                  />
-                </div>
+                <RingHistoryInput
+                  label="Descrição do Serviço"
+                  value={service.description}
+                  onChange={(value) => updateOutsourcing(index, 'description', value)}
+                  placeholder="ex: Corte do tubo"
+                  storageKey="ring-outsourcing"
+                />
                 <div className="space-y-2">
                   <Label>Custo (R$)</Label>
                   <Input
@@ -428,14 +423,13 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
             
             {labor.map((laborItem, index) => (
               <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
-                <div className="space-y-2">
-                  <Label>Descrição da Atividade</Label>
-                  <Input
-                    value={laborItem.description}
-                    onChange={(e) => updateLabor(index, 'description', e.target.value)}
-                    placeholder="ex: Marcação a laser"
-                  />
-                </div>
+                <RingHistoryInput
+                  label="Descrição da Atividade"
+                  value={laborItem.description}
+                  onChange={(value) => updateLabor(index, 'description', value)}
+                  placeholder="ex: Marcação a laser"
+                  storageKey="ring-labor"
+                />
                 <div className="space-y-2">
                    <Label>Minutos</Label>
                    <Input

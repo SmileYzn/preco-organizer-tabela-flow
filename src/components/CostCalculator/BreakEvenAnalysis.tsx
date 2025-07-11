@@ -40,18 +40,37 @@ export const BreakEvenAnalysis = ({ globalSettings, calculations }: BreakEvenAna
   const [results, setResults] = useState<BreakEvenResults | null>(null);
 
   const getProductOptions = () => {
-    return calculations.map(calc => ({
-      id: calc.id,
-      name: calc.productName,
-      calculation: calc
-    }));
+    // Buscar produtos salvos também
+    const savedProducts = JSON.parse(localStorage.getItem('savedProducts') || '[]');
+    const allProducts = [
+      ...calculations.map(calc => ({
+        id: calc.id,
+        name: calc.productName,
+        calculation: calc
+      })),
+      ...savedProducts.map((product: any) => ({
+        id: product.id,
+        name: product.productName,
+        calculation: product.calculation
+      }))
+    ];
+    
+    // Remover duplicatas
+    const uniqueProducts = allProducts.filter((product, index, self) => 
+      index === self.findIndex(p => p.id === product.id)
+    );
+    
+    return uniqueProducts;
   };
 
   const calculateBreakEven = () => {
     if (!selectedProduct) return;
     
-    const product = calculations.find(c => c.id === selectedProduct);
-    if (!product) return;
+    const productOptions = getProductOptions();
+    const selectedProductData = productOptions.find(p => p.id === selectedProduct);
+    if (!selectedProductData) return;
+    
+    const product = selectedProductData.calculation;
 
     // Custos variáveis por unidade
     let variableCostPerUnit = 0;

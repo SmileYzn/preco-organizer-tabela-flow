@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Percent, Calculator, TrendingDown, AlertTriangle } from "lucide-react";
 import { GlobalSettings } from "./types";
+import { ProductSelector } from "./ProductSelector";
 
 interface DiscountCalculatorProps {
   globalSettings: GlobalSettings;
@@ -30,6 +31,7 @@ export const DiscountCalculator = ({ globalSettings }: DiscountCalculatorProps) 
   const [discountValue, setDiscountValue] = useState(0);
   const [quantities, setQuantities] = useState([1, 10, 50, 100, 500]);
   const [results, setResults] = useState<DiscountScenario[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string>();
 
   const calculateDiscountScenarios = () => {
     const scenarios: DiscountScenario[] = [];
@@ -92,6 +94,28 @@ export const DiscountCalculator = ({ globalSettings }: DiscountCalculatorProps) 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
+          {/* Seleção de Produto */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Produto Base</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <ProductSelector
+                onProductSelect={(product) => {
+                  if (product) {
+                    setBasePrice(product.calculation.minimumPrice);
+                    setBaseCost(product.calculation.totalCost);
+                    setSelectedProductId(product.id);
+                  } else {
+                    setBasePrice(0);
+                    setBaseCost(0);
+                    setSelectedProductId(undefined);
+                  }
+                }}
+                selectedProductId={selectedProductId}
+                placeholder="Selecione um produto para calcular descontos"
+              />
+            </div>
+          </div>
+
           {/* Parâmetros Base */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Parâmetros Base</h3>

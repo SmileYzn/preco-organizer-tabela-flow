@@ -217,8 +217,18 @@ export const ProductTemplates = ({ onTemplateSelect }: ProductTemplatesProps) =>
             {filteredTemplates.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Bookmark className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhum template encontrado</p>
-                <p className="text-sm">Crie um template para reutilizar configurações de produtos</p>
+                <p className="mb-4">Nenhum template encontrado</p>
+                <div className="text-sm max-w-md mx-auto space-y-2">
+                  <p><strong>O que são Templates?</strong></p>
+                  <p>Templates são modelos pré-configurados que permitem:</p>
+                  <ul className="text-left space-y-1 mt-2">
+                    <li>• Reutilizar configurações comuns de produtos</li>
+                    <li>• Acelerar o processo de criação de novos cálculos</li>
+                    <li>• Padronizar produtos similares</li>
+                    <li>• Economizar tempo na digitação repetitiva</li>
+                  </ul>
+                  <p className="mt-4">Crie um template e aplique-o nas calculadoras para agilizar seu trabalho!</p>
+                </div>
               </div>
             ) : (
               filteredTemplates.map((template) => (

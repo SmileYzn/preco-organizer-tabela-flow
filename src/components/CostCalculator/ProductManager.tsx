@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Edit2, Trash2, Package, Search, FileSpreadsheet } from "lucide-react";
+import { Edit2, Trash2, Package, Search, FileSpreadsheet, Copy, CheckSquare } from "lucide-react";
 import { SavedProduct, GlobalSettings } from "./types";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
@@ -20,6 +20,7 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingProduct, setEditingProduct] = useState<SavedProduct | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
   useEffect(() => {
     loadSavedProducts();
@@ -36,6 +37,7 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
     const updated = savedProducts.filter(p => p.id !== id);
     setSavedProducts(updated);
     localStorage.setItem('savedProducts', JSON.stringify(updated));
+    window.dispatchEvent(new Event('productsUpdated'));
     
     toast({
       title: "Produto excluído",
@@ -54,6 +56,7 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
     
     setSavedProducts(updated);
     localStorage.setItem('savedProducts', JSON.stringify(updated));
+    window.dispatchEvent(new Event('productsUpdated'));
     setIsEditDialogOpen(false);
     setEditingProduct(null);
     
@@ -106,11 +109,51 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  const replicateProduct = (product: SavedProduct) => {
+    const replicated = {
+      ...product,
+      id: Date.now().toString(),
+      productName: `${product.productName} (Cópia)`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    const updated = [...savedProducts, replicated];
+    setSavedProducts(updated);
+    localStorage.setItem('savedProducts', JSON.stringify(updated));
+    window.dispatchEvent(new Event('productsUpdated'));
+    
+    toast({
+      title: "Produto replicado",
+      description: "Produto copiado com sucesso! Edite as informações conforme necessário.",
+    });
+  };
+
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProducts(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedProducts(prev => 
+      prev.length === filteredProducts.length 
+        ? [] 
+        : filteredProducts.map(p => p.id)
+    );
+  };
+
   const exportToExcel = () => {
-    if (savedProducts.length === 0) {
+    const productsToExport = selectedProducts.length > 0 
+      ? savedProducts.filter(p => selectedProducts.includes(p.id))
+      : savedProducts;
+      
+    if (productsToExport.length === 0) {
       toast({
         title: "Nenhum produto para exportar",
-        description: "Adicione produtos antes de exportar.",
+        description: selectedProducts.length > 0 ? "Selecione produtos para exportar." : "Adicione produtos antes de exportar.",
         variant: "destructive"
       });
       return;
@@ -142,7 +185,7 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
       ['Nome do Produto', 'Tipo', 'Descrição', 'Custo Total (R$)', 'Preço Mínimo (R$)', 'Data Criação', 'Última Atualização']
     ];
 
-    savedProducts.forEach(product => {
+    productsToExport.forEach(product => {
       const calc = product.calculation;
      productsData.push([
         product.productName,
@@ -163,7 +206,7 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
       ['Nome', 'Descrição', 'Custo Materiais', 'Custo Terceirização', 'Custo Mão de Obra', 'Custo Embalagem', 'Frete Entrada', 'Custo Fixo Rateado', 'Depreciação Laser', 'Custo Total', 'Preço Mínimo']
     ];
 
-    savedProducts.filter(p => p.type === 'ring').forEach(product => {
+    productsToExport.filter(p => p.type === 'ring').forEach(product => {
       const calc = product.calculation as any;
       const materialCost = calc.materials?.reduce((sum: number, m: any) => sum + (m.quantity * m.unitCost), 0) || 0;
       const outsourcingCost = calc.outsourcing?.reduce((sum: number, o: any) => sum + o.cost, 0) || 0;
@@ -192,7 +235,7 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
       ['Nome', 'Descrição', 'Preço Compra', 'Frete Entrada', 'Custo Mão de Obra', 'Custo Embalagem', 'Custo Fixo Rateado', 'Depreciação Laser', 'Custo Total', 'Preço Mínimo']
     ];
 
-    savedProducts.filter(p => p.type === 'gift').forEach(product => {
+    productsToExport.filter(p => p.type === 'gift').forEach(product => {
       const calc = product.calculation as any;
       const laborCost = calc.labor?.reduce((sum: number, l: any) => sum + (l.hours * (l.rate || globalSettings.laborRate)), 0) || 0;
 
@@ -249,13 +292,22 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
               </div>
             </div>
             <div className="flex gap-2">
+              <Button
+                onClick={toggleSelectAll}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <CheckSquare className="h-4 w-4" />
+                {selectedProducts.length === filteredProducts.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+              </Button>
               <Button 
                 onClick={exportToExcel}
                 variant="outline"
                 className="flex items-center gap-2"
               >
                 <FileSpreadsheet className="h-4 w-4" />
-                Exportar Excel
+                Exportar Excel {selectedProducts.length > 0 && `(${selectedProducts.length})`}
               </Button>
             </div>
           </div>
@@ -292,6 +344,14 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.length === filteredProducts.length && filteredProducts.length > 0}
+                        onChange={toggleSelectAll}
+                        className="rounded"
+                      />
+                    </TableHead>
                     <TableHead>Produto</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Custo Total</TableHead>
@@ -303,6 +363,14 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
                 <TableBody>
                   {filteredProducts.map((product) => (
                     <TableRow key={product.id}>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(product.id)}
+                          onChange={() => toggleProductSelection(product.id)}
+                          className="rounded"
+                        />
+                      </TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">{product.productName}</div>
@@ -321,6 +389,14 @@ export const ProductManager = ({ globalSettings }: ProductManagerProps) => {
                       <TableCell>{formatDate(product.createdAt)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => replicateProduct(product)}
+                            title="Replicar produto"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
                           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                             <DialogTrigger asChild>
                               <Button

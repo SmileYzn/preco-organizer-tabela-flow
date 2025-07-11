@@ -45,6 +45,8 @@ export const PriceHistory = ({ globalSettings, calculations }: PriceHistoryProps
 
   useEffect(() => {
     // Adicionar novas entradas do histórico quando há novos cálculos
+    if (calculations.length === 0) return;
+    
     calculations.forEach(calc => {
       const existingEntry = priceHistory.find(
         entry => entry.productId === calc.id && 
@@ -70,7 +72,7 @@ export const PriceHistory = ({ globalSettings, calculations }: PriceHistoryProps
         setPriceHistory(prev => [...prev, newEntry]);
       }
     });
-  }, [calculations]);
+  }, [calculations, priceHistory]);
 
   const getFilteredHistory = () => {
     let filtered = priceHistory;

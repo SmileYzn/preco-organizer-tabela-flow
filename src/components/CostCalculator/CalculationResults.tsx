@@ -27,7 +27,15 @@ export const CalculationResults = ({ calculations, globalSettings }: Calculation
       <Card className="shadow-card">
         <CardContent className="p-8 text-center">
           <div className="text-muted-foreground">
-            Nenhum cálculo realizado ainda. Use as calculadoras acima para analisar seus produtos.
+            <p className="mb-4">Nenhum cálculo realizado ainda.</p>
+            <p className="text-sm">Esta aba mostra os resultados detalhados dos cálculos realizados nas abas "Anilhas" e "Brindes".</p>
+            <p className="text-sm mt-2">Para ver os resultados aqui:</p>
+            <ol className="text-sm mt-2 space-y-1 text-left max-w-md mx-auto">
+              <li>1. Vá para a aba "Anilhas" ou "Brindes"</li>
+              <li>2. Preencha os dados do produto</li>
+              <li>3. Clique em "Calcular Custos"</li>
+              <li>4. Os resultados aparecerão automaticamente aqui</li>
+            </ol>
           </div>
         </CardContent>
       </Card>
