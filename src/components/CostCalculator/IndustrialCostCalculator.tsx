@@ -22,8 +22,11 @@ const defaultSettings: GlobalSettings = {
   icmsRate: 18.00,
   pisRate: 1.65,
   cofinsRate: 7.60,
+  difalRate: 4.00,
+  usesDifal: false,
   commissionRate: 5.00,
-  freightRate: 3.00
+  freightRate: 3.00,
+  companyState: 'SP'
 };
 
 export const IndustrialCostCalculator = () => {

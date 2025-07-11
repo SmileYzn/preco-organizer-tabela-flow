@@ -161,6 +161,7 @@ export const RingCalculator = ({ globalSettings, onCalculationSave }: RingCalcul
         marginPercent: [20, 30, 40, 50, 60][index],
         sellingPrice: price,
         totalTaxes: price * (taxRate / 100),
+        totalDifal: 0, // DIFAL será calculado na PricingTable com estado do cliente
         totalCommission: price * (globalSettings.commissionRate / 100),
         totalOutboundFreight: price * (globalSettings.freightRate / 100),
         netProfit: price - totalCost - (price * (taxRate + globalSettings.commissionRate + globalSettings.freightRate) / 100),

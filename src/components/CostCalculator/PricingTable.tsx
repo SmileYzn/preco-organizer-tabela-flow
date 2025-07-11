@@ -18,6 +18,7 @@ interface PricingTableProps {
 export const PricingTable = ({ totalCost, globalSettings, productName, productType }: PricingTableProps) => {
   const [margins, setMargins] = useState([10, 20, 30, 50, 100]);
   const [customMargin, setCustomMargin] = useState("");
+  const [customerState, setCustomerState] = useState("");
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -30,13 +31,21 @@ export const PricingTable = ({ totalCost, globalSettings, productName, productTy
     return `${value.toFixed(2)}%`;
   };
 
-  const calculatePricing = (marginPercent: number): ProfitMargin => {
+  const calculatePricing = (marginPercent: number, customerState?: string): ProfitMargin => {
     // Taxa total de impostos
-    const totalTaxRate = globalSettings.taxRegime === 'simples' ? 6.0 : 
-                        (globalSettings.icmsRate + globalSettings.pisRate + globalSettings.cofinsRate);
+    const baseTaxRate = globalSettings.taxRegime === 'simples' ? 6.0 : 
+                       (globalSettings.icmsRate + globalSettings.pisRate + globalSettings.cofinsRate);
+    
+    // DIFAL - aplica apenas se configurado e cliente for de estado diferente
+    const difalApplies = globalSettings.usesDifal && 
+                        customerState && 
+                        customerState !== globalSettings.companyState;
+    const difalRate = difalApplies ? globalSettings.difalRate : 0;
+    
+    const totalTaxRate = baseTaxRate;
     
     // Percentuais totais que incidem sobre o preço de venda
-    const totalDeductions = totalTaxRate + globalSettings.commissionRate + globalSettings.freightRate;
+    const totalDeductions = totalTaxRate + difalRate + globalSettings.commissionRate + globalSettings.freightRate;
     
     // Preço de venda = Custo Total / (1 - % Deduções - % Margem Desejada)
     const denominator = 1 - (totalDeductions + marginPercent) / 100;
@@ -46,28 +55,33 @@ export const PricingTable = ({ totalCost, globalSettings, productName, productTy
         marginPercent,
         sellingPrice: 0,
         totalTaxes: 0,
+        totalDifal: 0,
         totalCommission: 0,
         totalOutboundFreight: 0,
         netProfit: 0,
-        netMarginPercent: 0
+        netMarginPercent: 0,
+        customerState
       };
     }
 
     const sellingPrice = totalCost / denominator;
     const totalTaxes = sellingPrice * (totalTaxRate / 100);
+    const totalDifal = sellingPrice * (difalRate / 100);
     const totalCommission = sellingPrice * (globalSettings.commissionRate / 100);
     const totalOutboundFreight = sellingPrice * (globalSettings.freightRate / 100);
-    const netProfit = sellingPrice - totalCost - totalTaxes - totalCommission - totalOutboundFreight;
+    const netProfit = sellingPrice - totalCost - totalTaxes - totalDifal - totalCommission - totalOutboundFreight;
     const netMarginPercent = (netProfit / sellingPrice) * 100;
 
     return {
       marginPercent,
       sellingPrice,
       totalTaxes,
+      totalDifal,
       totalCommission,
       totalOutboundFreight,
       netProfit,
-      netMarginPercent
+      netMarginPercent,
+      customerState
     };
   };
 
@@ -134,9 +148,23 @@ export const PricingTable = ({ totalCost, globalSettings, productName, productTy
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
-        {/* Adicionar margem personalizada */}
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
+        {/* Configurações de Precificação */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="customerState">Estado do Cliente (para DIFAL)</Label>
+            <Input
+              id="customerState"
+              value={customerState}
+              onChange={(e) => setCustomerState(e.target.value.toUpperCase())}
+              placeholder="ex: RJ, MG, RS"
+              maxLength={2}
+              className="uppercase"
+            />
+            <p className="text-xs text-muted-foreground">
+              Deixe vazio para vendas dentro do mesmo estado
+            </p>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="customMargin">Adicionar Margem Personalizada (%)</Label>
             <Input
               id="customMargin"
@@ -147,9 +175,11 @@ export const PricingTable = ({ totalCost, globalSettings, productName, productTy
               placeholder="ex: 75"
             />
           </div>
-          <Button onClick={addCustomMargin} variant="outline">
-            Adicionar
-          </Button>
+          <div className="flex items-end">
+            <Button onClick={addCustomMargin} variant="outline" className="w-full">
+              Adicionar Margem
+            </Button>
+          </div>
         </div>
 
         {/* Tabela de precificação */}
@@ -160,6 +190,7 @@ export const PricingTable = ({ totalCost, globalSettings, productName, productTy
                 <TableHead>Margem Desejada</TableHead>
                 <TableHead>Preço de Venda</TableHead>
                 <TableHead>Impostos</TableHead>
+                <TableHead>DIFAL</TableHead>
                 <TableHead>Comissão</TableHead>
                 <TableHead>Frete Saída</TableHead>
                 <TableHead>Lucro Líquido</TableHead>
@@ -169,7 +200,7 @@ export const PricingTable = ({ totalCost, globalSettings, productName, productTy
             </TableHeader>
             <TableBody>
               {margins.map((margin) => {
-                const pricing = calculatePricing(margin);
+                const pricing = calculatePricing(margin, customerState);
                 return (
                   <TableRow key={margin}>
                     <TableCell className="font-medium">{formatPercent(margin)}</TableCell>
@@ -177,6 +208,10 @@ export const PricingTable = ({ totalCost, globalSettings, productName, productTy
                       {formatCurrency(pricing.sellingPrice)}
                     </TableCell>
                     <TableCell>{formatCurrency(pricing.totalTaxes)}</TableCell>
+                    <TableCell className={pricing.totalDifal > 0 ? "text-orange-600" : ""}>
+                      {formatCurrency(pricing.totalDifal)}
+                      {pricing.totalDifal > 0 && <span className="text-xs ml-1">({customerState})</span>}
+                    </TableCell>
                     <TableCell>{formatCurrency(pricing.totalCommission)}</TableCell>
                     <TableCell>{formatCurrency(pricing.totalOutboundFreight)}</TableCell>
                     <TableCell className="font-semibold text-blue-700">
@@ -201,7 +236,7 @@ export const PricingTable = ({ totalCost, globalSettings, productName, productTy
         </div>
 
         {/* Resumo de custos */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
           <div className="text-center">
             <div className="text-sm text-muted-foreground">Custo Total Unitário</div>
             <div className="text-lg font-bold text-primary">{formatCurrency(totalCost)}</div>
@@ -209,17 +244,27 @@ export const PricingTable = ({ totalCost, globalSettings, productName, productTy
           <div className="text-center">
             <div className="text-sm text-muted-foreground">Preço Mínimo (0% lucro)</div>
             <div className="text-lg font-bold text-orange-600">
-              {formatCurrency(calculatePricing(0).sellingPrice)}
+              {formatCurrency(calculatePricing(0, customerState).sellingPrice)}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-muted-foreground">Taxa Total de Deduções</div>
+            <div className="text-sm text-muted-foreground">Taxa de Impostos</div>
             <div className="text-lg font-bold text-red-600">
               {formatPercent(
-                (globalSettings.taxRegime === 'simples' ? 6.0 : 
-                 (globalSettings.icmsRate + globalSettings.pisRate + globalSettings.cofinsRate)) +
-                globalSettings.commissionRate + globalSettings.freightRate
+                globalSettings.taxRegime === 'simples' ? 6.0 : 
+                (globalSettings.icmsRate + globalSettings.pisRate + globalSettings.cofinsRate)
               )}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm text-muted-foreground">
+              DIFAL {customerState && customerState !== globalSettings.companyState ? `(${customerState})` : ''}
+            </div>
+            <div className="text-lg font-bold text-orange-600">
+              {globalSettings.usesDifal && customerState && customerState !== globalSettings.companyState 
+                ? formatPercent(globalSettings.difalRate)
+                : "0.00%"
+              }
             </div>
           </div>
         </div>

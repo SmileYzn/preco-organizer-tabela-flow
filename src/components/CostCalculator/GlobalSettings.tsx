@@ -115,6 +115,20 @@ export const GlobalSettingsComponent = ({ settings, onSettingsChange }: GlobalSe
               </Select>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="companyState">Estado da Empresa</Label>
+              <Input
+                id="companyState"
+                value={localSettings.companyState}
+                onChange={(e) => updateSetting('companyState', e.target.value)}
+                placeholder="ex: SP"
+                maxLength={2}
+                className="uppercase"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="icms">ICMS (%)</Label>
               <Input
                 id="icms"
@@ -123,6 +137,17 @@ export const GlobalSettingsComponent = ({ settings, onSettingsChange }: GlobalSe
                 value={localSettings.icmsRate}
                 onChange={(e) => updateSetting('icmsRate', parseFloat(e.target.value) || 0)}
                 placeholder="ex: 18.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="difal">DIFAL - Diferencial de Alíquota (%)</Label>
+              <Input
+                id="difal"
+                type="number"
+                step="0.01"
+                value={localSettings.difalRate}
+                onChange={(e) => updateSetting('difalRate', parseFloat(e.target.value) || 0)}
+                placeholder="ex: 4.00"
               />
             </div>
           </div>
@@ -153,6 +178,24 @@ export const GlobalSettingsComponent = ({ settings, onSettingsChange }: GlobalSe
               </div>
             </div>
           )}
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="usesDifal"
+                checked={localSettings.usesDifal}
+                onChange={(e) => updateSetting('usesDifal', e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <Label htmlFor="usesDifal" className="text-sm">
+                Aplicar DIFAL para vendas B2C em outros estados
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              O DIFAL é aplicado quando vendendo para consumidor final (pessoa física) em estado diferente do seu.
+            </p>
+          </div>
         </div>
 
         {/* Vendas */}

@@ -4,11 +4,22 @@ export interface GlobalSettings {
   monthlyFixedCosts: number; // Custos fixos mensais
   monthlyProduction: number; // Produção estimada mensal para rateio
   taxRegime: 'simples' | 'presumido' | 'real';
+  
+  // Impostos principais
   icmsRate: number; // %
   pisRate: number; // %
   cofinsRate: number; // %
+  
+  // DIFAL - Diferencial de Alíquota (para venda consumidor final)
+  difalRate: number; // %
+  usesDifal: boolean; // Se aplica DIFAL nas vendas
+  
+  // Custos de vendas
   commissionRate: number; // %
   freightRate: number; // % sobre valor ou fixo
+  
+  // Estado da empresa para cálculo DIFAL
+  companyState: string;
 }
 
 export interface MaterialCost {
@@ -104,10 +115,12 @@ export interface ProfitMargin {
   marginPercent: number;
   sellingPrice: number;
   totalTaxes: number;
+  totalDifal: number;
   totalCommission: number;
   totalOutboundFreight: number;
   netProfit: number;
   netMarginPercent: number;
+  customerState?: string; // Estado do cliente para cálculo DIFAL
 }
 
 export interface ProfitabilityAnalysis {
